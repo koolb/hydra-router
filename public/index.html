@@ -93,6 +93,35 @@
       .td-center {
         text-align: center;
       }
+      .collapsible {
+        background-color: #eee;
+        color: #444;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+      }
+      .collapsible:after {
+        content: '\02795';
+        font-size: 13px;
+        color: white;
+        float: right;
+        margin-left: 5px;
+      }
+      .active:after {
+         content: '\02796'; 
+      }
+      .active, .collapsible:hover {
+         background-color: #ccc;
+      }
+      .content {
+         padding: 0 18px;
+         display: none;
+         overflow: hidden;
+         background-color: #f1f1f1;
+      }
     </style>
 	</head>
 	<body>
@@ -219,6 +248,22 @@ class Header extends Component {
     );
   }
 }
+class Routes extends Component {
+  constructor(props) { super(props) }
+  onToggle() {
+    this.base.classList.toggle("active");
+    let content = this.base.lastChild;
+    content.style.display = content.style.display === "block" ? "none":"block";
+  }
+  render(props) {
+	  let liRoutes = props.routes.map(route => h('li', {}, h('a', {'href': props.href + route}, route)));
+    return( h('p', {}, h('button', { type: "button", class: "btn btn-default collapsible active", onmouseover: this.onToggle.bind(this) }, Routes),
+	    h('ul', { class: "content"}, liRoutes))
+	  );
+  }
+}
+
+
 
 /**
 * @name DashboardScreen
@@ -263,30 +308,36 @@ class DashboardScreen extends Component {
 
   getNodeData() {
     let tokenUrlSuffix = '';
+	  let routes = {};
     const token = new RegExp("token=([^&]*)", "i").exec(window.location.search);
     if (token !== null)  {
       tokenUrlSuffix = '?token=' + token[1];
     }
-    fetch('/v1/router/list/nodes' + tokenUrlSuffix)
-      .then((res) => {
-        return res.json();
-      })
-      .then((res) => {
-        let sortedNodes = res.result.sort((a, b) => {
-          if (a.serviceName < b.serviceName)
-            return -1;
-          if (a.serviceName > b.serviceName)
-            return 1;
-          return 0;
-        });
-        this.setState({
-          instanceID: `hydra-router (${res.version}) running on ${res.hostname} - (${res.instanceID})`,
-          nodes: sortedNodes
-        });
-      })
-      .catch((err) => {
-        console.log(err);
+    fetch('/v1/router/list/routes').then((res) => { return res.json() }).then((res) => {
+      res.result.forEach(route => routes[route.serviceName] = route.routes);
+
+      fetch('/v1/router/list/nodes' + tokenUrlSuffix)
+        .then((res) => {
+          return res.json();
+        })
+        .then((res) => {
+          let sortedNodes = res.result.sort((a, b) => {
+            if (a.serviceName < b.serviceName)
+              return -1;
+            if (a.serviceName > b.serviceName)
+              return 1;
+            return 0;
+          });
+          sortedNodes.forEach(node => node.routes = routes[node.serviceName]);	
+          this.setState({
+            instanceID: `hydra-router (${res.version}) running on ${res.hostname} - (${res.instanceID})`,
+            nodes: sortedNodes
+          });
+        })
+        .catch((err) => {
+          console.log(err);
       });
+  });
   }
 
   render(props, state) {
@@ -296,6 +347,7 @@ class DashboardScreen extends Component {
     if (state.nodes) {
       tiles = [];
       state.nodes.forEach((node) => {
+	let href = "http://" + `${node.ip}:${node.port}`;
         let content = [
           h('p', {},
             h('b', {}, 'HostName: '),
@@ -324,7 +376,10 @@ class DashboardScreen extends Component {
           h('p', {},
             h('b', {}, 'Elapsed: '),
             node.elapsed
-          )
+	  ),
+	  h('p', {},
+	     h(Routes, {routes: node.routes, "href": href } )
+	   )
         ];
         let icon;
         let titleColor;

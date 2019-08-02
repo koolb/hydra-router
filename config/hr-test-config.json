@@ -16,7 +16,7 @@
     "serviceName": "hydra-router",
     "serviceDescription": "Service Router",
     "serviceIP": "",
-    "servicePort": "80",
+    "servicePort": "8080",
     "serviceType": "router",
     "plugins": {
       "dontuse-logger": {
