@@ -307,7 +307,7 @@ class DashboardScreen extends Component {
           ),
           h('p', {},
             h('b', {}, 'InstanceID: '),
-            node.instanceID
+		  node.instanceID
           ),
           h('p', {},
             h('b', {}, 'Version: '),
@@ -315,7 +315,7 @@ class DashboardScreen extends Component {
           ),
           h('p', {},
             h('b', {}, 'IP/Port: '),
-            `${node.ip}:${node.port}`
+		  h('a', { href: `http://${node.ip}:${node.port}`}, `${node.ip}:${node.port}`),
           ),
           h('p', {},
             h('b', {}, 'Updated on: '),
